@@ -1,7 +1,7 @@
 # student_project
 
-##Git Befehle
-First Tab:
+## Git Befehle
+
 ```sh
 git clone
 ```
