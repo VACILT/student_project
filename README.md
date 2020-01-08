@@ -26,3 +26,7 @@ conda install -c pyviz panel
 ```sh
 conda install -c conda-forge jupytext
 ```
+open jupyter notebook 
+```sh
+jupyter notebook
+```
