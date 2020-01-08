@@ -1,6 +1,7 @@
 # Student Project
 
 ###Required:
+Numpy 'conda install -c anaconda numpy'
 
 ###optional:
-[yupytext](https://github.com/mwouts/jupytext/blob/master/README.md) shows code differenzes with jupyter notebook
+[jupytext](https://github.com/mwouts/jupytext/blob/master/README.md) shows code differenzes with jupyter notebook
