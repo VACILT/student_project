@@ -1,9 +1,21 @@
 ## Student Project
-
+To install modules open Anaconda Prompt
 ### Required:
 Numpy  
 ```sh
 conda install -c anaconda numpy
+```
+xarray  
+```sh
+conda install xarray
+```
+pandas
+```sh
+conda install pandas
+```
+hvplot
+```sh
+conda install -c pyviz hvplot
 ```
 
 ### Optional:
