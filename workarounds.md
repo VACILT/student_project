@@ -8,6 +8,6 @@ The procedure entry point OPENSSL_sk_new_reserve could not be located in the dyn
 
 ### Solution 1:
 
-_I copied the one in Anaconda/DLLS and replaced that in Anaconda/Library/bin and conda started working again, at least for now - I could install new packages again._
+_I copied the one in __Anaconda/DLLS__ and replaced that in __Anaconda/Library/bin__ and conda started working again, at least for now - I could install new packages again._
 
 [Github Solution](https://github.com/conda/conda/issues/9003)
