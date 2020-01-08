@@ -1,12 +1,12 @@
-# Student Project
+## Student Project
 
-###Required:
+### Required:
 Numpy  
 ```sh
 conda install -c anaconda numpy
 ```
 
-###optional:
+### Optional:
 [jupytext](https://github.com/mwouts/jupytext/blob/master/README.md) shows code differenzes with jupyter notebook
 ```sh
 conda install -c conda-forge jupytext
