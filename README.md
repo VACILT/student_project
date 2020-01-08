@@ -3,4 +3,4 @@
 ###Required:
 
 ###optional:
-(https://github.com/mwouts/jupytext/blob/master/README.md)[yupytext] shows code differenzes with jupyter notebook
+[yupytext](https://github.com/mwouts/jupytext/blob/master/README.md) shows code differenzes with jupyter notebook
