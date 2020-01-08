@@ -1,7 +1,7 @@
 ## Student Project
 To install modules open Anaconda Prompt
 ### Required:
-Numpy  
+numpy  
 ```sh
 conda install -c anaconda numpy
 ```
@@ -17,7 +17,10 @@ hvplot
 ```sh
 conda install -c pyviz hvplot
 ```
-
+panel
+```sh
+conda install -c pyviz panel
+```
 ### Optional:
 [jupytext](https://github.com/mwouts/jupytext/blob/master/README.md) shows code differenzes with jupyter notebook
 ```sh
