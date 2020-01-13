@@ -11,3 +11,14 @@ The procedure entry point OPENSSL_sk_new_reserve could not be located in the dyn
 _I copied the one in __Anaconda/DLLS__ and replaced that in __Anaconda/Library/bin__ and conda started working again, at least for now - I could install new packages again._
 
 [Github Solution](https://github.com/conda/conda/issues/9003)
+
+### Problem 2:
+
+change jupyter notebook starting dir
+
+### Solution 1:
+
+start jupyter with Anaconda Prompt
+```sh
+jupyter notebook --notebook-dir="D:\\project"
+```
