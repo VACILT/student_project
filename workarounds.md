@@ -16,7 +16,7 @@ _I copied the one in __Anaconda/DLLS__ and replaced that in __Anaconda/Library/b
 
 change jupyter notebook starting dir
 
-### Solution 1:
+### Solution 2:
 
 start jupyter with Anaconda Prompt
 ```sh
