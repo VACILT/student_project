@@ -35,8 +35,19 @@ from ipywebrtc.webrtc import VideoRecorder, WidgetStream
 
 invar = 'zmnoy'
 infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
-ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine='nested')# Open multiple files as a single dataset
+ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
 ds_xa
+
+# +
+#a=xr.open_dataset(infiles[0]) #Data Inspection
+#a.var
+#a.coords
+#a.attrs
+#a.coords['lat']    #show one specific coordinate
+#a.coords['plev']
+#a.coefs   
+#a.sel(lat=0, plev=1.00e+03,reg='intercept', month=1)
+# -
 
 sel_reg = 'f107'
 sel_month = 1
