@@ -58,8 +58,6 @@ ds_sel['ens'] = range(4)
 
 # +
 ds = hv.Dataset(ds_sel[['coefs']], kdims = ['ens', 'x', 'y'])#
-print(ds_sel[['coefs']])
-
 vmax = 40
 vmin = -vmax
 f_width = 300
@@ -67,10 +65,10 @@ hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
                 tools = ['hover'], invert_yaxis=True, frame_width = f_width)#initialize options data for axis
 im = ds.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
 im2 = ds.aggregate(['x','y'], np.mean).to(hv.QuadMesh, ['x', 'y'], dynamic=True)
-print(coefs)
-#im2 = im2.redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
+im2 = im2.redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
 
-#im2
+im
+im2
 # -
 
 
