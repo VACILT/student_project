@@ -39,36 +39,36 @@ import glob
 invar = 'zmnoy'
 infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
 ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
-#ds_xa
+ds_xa
 
 # ### select data
 
-sel_reg = 'f107'
-sel_month = 1
-month_names = ['January', 'February','March','April','May','June','July','Sep','Oct','Nov','Dec']
-sel_dict = dict(reg = sel_reg, month = sel_month)          #set two dims to a fixed value
+#sel_reg = 'f107'
+#sel_month = 1
+month_names = ['January', 'February','March','April','May','June','July','Aug','Sep','Oct','Nov','Dec']
+sel_dict = dict()          #set two dims to a fixed value
 ds_sel = ds_xa.sel(**sel_dict).rename({'lat': 'x', 'plev': 'y'}) #rename lat to x and pressure level to y
 ds_sel['coefs'].attrs['units'] = '%' #ds_sel['coefs'] only takes the coefs of the dataset
 ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
-ds_sel['ens'] = range(4)
-#ds_sel
+ds_sel['ens'] = ens_ls
+ds_sel['month']=month_names #ds_sel
+#ds_sel['reg']=range(9) #ds_sel
+ds_sel
 
 # ### plot data
 # [QuadMesh](http://holoviews.org/reference/elements/bokeh/QuadMesh.html)
 
 # +
-ds = hv.Dataset(ds_sel[['coefs']], kdims = ['ens', 'x', 'y'])#
+ds = hv.Dataset(ds_sel[['coefs']], kdims = ['reg','month','ens', 'x', 'y'])#
 vmax = 40
 vmin = -vmax
 f_width = 300
 hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
                 tools = ['hover'], invert_yaxis=True, frame_width = f_width)#initialize options data for axis
 im = ds.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
-im2 = ds.aggregate(['x','y'], np.mean).to(hv.QuadMesh, ['x', 'y'], dynamic=True)
-im2 = im2.redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
+
 
 im
-im2
 # -
 
 
