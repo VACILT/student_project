@@ -15,6 +15,7 @@
 
 # # Table of contents
 # - [import Modules](###import-modules)
+# - [functions](###functions)
 # - [combine files](###combine-files)
 # - [select data](###select-data)
 # - [plot data](###plot-data)
@@ -28,9 +29,17 @@ from holoviews import streams
 import xarray as xr
 import hvplot.xarray
 import glob
-#from scipy.stats import combine_pvalues
-#hv.extension('bokeh')
-#from ipywebrtc.webrtc import VideoRecorder, WidgetStream
+from scipy.stats import combine_pvalues
+hv.extension('bokeh')
+from ipywebrtc.webrtc import VideoRecorder, WidgetStream
+
+
+# ### functions
+
+def combine_pvalues_ufunc(arr):
+    _, pv = combine_pvalues(arr, method = 'stouffer')
+    return pv
+
 
 # ### combine files
 # - [creating-a-dataset](http://xarray.pydata.org/en/stable/data-structures.html#creating-a-dataset)
@@ -39,36 +48,54 @@ import glob
 invar = 'zmnoy'
 infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
 ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
-ds_xa
+#ds_xa
 
 # ### select data
 
-#sel_reg = 'f107'
-#sel_month = 1
+# +
+ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 month_names = ['January', 'February','March','April','May','June','July','Aug','Sep','Oct','Nov','Dec']
 sel_dict = dict()          #set two dims to a fixed value
-ds_sel = ds_xa.sel(**sel_dict).rename({'lat': 'x', 'plev': 'y'}) #rename lat to x and pressure level to y
+ds_sel = ds_xa.sel().rename({'lat': 'x', 'plev': 'y'}) #rename lat to x and pressure level to y
 ds_sel['coefs'].attrs['units'] = '%' #ds_sel['coefs'] only takes the coefs of the dataset
-ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 ds_sel['ens'] = ens_ls
-ds_sel['month']=month_names #ds_sel
-#ds_sel['reg']=range(9) #ds_sel
-ds_sel
+
+ds_sel['month']=np.arange(1,13,1) #ds_sel
+ds_mean=ds_sel.mean('ens')#reduce one dimension by average "ens"
+# -
 
 # ### plot data
 # [QuadMesh](http://holoviews.org/reference/elements/bokeh/QuadMesh.html)
+#
+# [multi-dimensional dictionary of HoloViews objects](http://holoviews.org/reference/containers/bokeh/HoloMap.html)
 
 # +
-ds = hv.Dataset(ds_sel[['coefs']], kdims = ['reg','month','ens', 'x', 'y'])#
+ds = hv.Dataset(ds_sel[['coefs']], kdims = ['month','reg','ens', 'x', 'y'])
+ds_2 = hv.Dataset(ds_mean[['coefs']], kdims = ['month','reg' ,'x', 'y'])
+
+ps = hv.Dataset(ds_sel[['p_values']], kdims = ['month','reg','ens', 'x', 'y'])
 vmax = 40
 vmin = -vmax
 f_width = 300
+
 hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
                 tools = ['hover'], invert_yaxis=True, frame_width = f_width)#initialize options data for axis
 im = ds.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
 
 
-im
+hvc_opts_2 = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
+                tools = ['hover'], invert_yaxis=True, frame_width = f_width)
+im_mean= ds_2.to(hv.QuadMesh, ['x', 'y'], dynamic=True, label="Average across all ens").redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_2)
+
+#temp = xr.apply_ufunc(combine_pvalues_ufunc, ds_sel['p_values'], input_core_dims=[['ens']], \
+#              output_core_dims = [[]], vectorize = True, dask = 'allowed')
+#im2 =  temp.hvplot.contour(dict(width=300, dynamic=True, \
+#                                         x = 'x', y = 'y',  colorbar = False, \
+#                                      logy = True, cmap = ['black', 'gray'], \
+#                                                levels=[0.01,0.05]))
+
+layout = hv.Layout(im+im_mean).cols(1)
+layout
 # -
 
 
