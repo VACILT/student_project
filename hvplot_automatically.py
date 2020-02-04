@@ -36,9 +36,9 @@ from ipywebrtc.webrtc import VideoRecorder, WidgetStream
 
 # ### functions
 
-def combine_pvalues_ufunc(arr):
-    _, pv = combine_pvalues(arr, method = 'stouffer')
-    return pv
+def combine_pvalues_ufunc(arr, axis):
+    _, pc = combine_pvalues(arr, method = 'stouffer')
+    return pc
 
 
 # ### combine files
@@ -62,38 +62,53 @@ ds_sel['ens'] = ens_ls
 
 ds_sel['month']=np.arange(1,13,1) #ds_sel
 ds_mean=ds_sel.mean('ens')#reduce one dimension by average "ens"
-ds_sel['coefs']
+
+ds_mean_ps=ds_sel.assign(log_p=-2*np.log((ds_sel.p_values))) #using the fisher's method to combine p values
+ds_mean_ps=ds_mean_ps.sum('ens')
 # -
 
 # ### plot data
 # [QuadMesh](http://holoviews.org/reference/elements/bokeh/QuadMesh.html)
+#
+# [Contours](http://holoviews.org/reference/elements/bokeh/Contours.html)
 #
 # [multi-dimensional dictionary of HoloViews objects](http://holoviews.org/reference/containers/bokeh/HoloMap.html)
 #
 # [Widget](https://hvplot.holoviz.org/user_guide/Widgets.html)
 
 # +
-ds = hv.Dataset(ds_sel[['coefs']], kdims = ['month','reg','ens', 'x', 'y'])
-ds_2 = hv.Dataset(ds_mean[['coefs']], kdims = ['month','reg' ,'x', 'y'])
-
-ps = hv.Dataset(ds_sel[['p_values']], kdims = ['month','reg','ens', 'x', 'y'])
 vmax = 40
 vmin = -vmax
 f_width = 300
 
 hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
-                tools = ['hover'], invert_yaxis=True, frame_width = f_width)#initialize options data for axis
-im = ds.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
-
-
-hvc_opts_2 = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
                 tools = ['hover'], invert_yaxis=True, frame_width = f_width)
-im_mean= ds_2.to(hv.QuadMesh, ['x', 'y'], dynamic=True, label="Average across all ens").redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_2)
 
-#im2 =  temp.hvplot.contour(dict(width=300, dynamic=True, \
-#                                              levels=[0.01,0.05]))
-layout=hv.Layout(im+im_mean).cols(1)
+hvc_opts_pv = dict(logy = True, symmetric=True, colorbar = True, invert_yaxis=True, frame_width = f_width) #initialize options data for axis
+
+
+
+
+ds = hv.Dataset(ds_sel[['coefs']], kdims = ['month','reg','ens', 'x', 'y'])
+ds_2 = hv.Dataset(ds_mean[['coefs']], kdims = ['month','reg' ,'x', 'y'])
+ps = hv.Dataset(ds_sel[['p_values']], kdims = ['month','reg','ens', 'x', 'y']) #crating a hv.dataset for p_values
+ps_mean = hv.Dataset(ds_mean_ps[['log_p']], kdims = ['month','reg', 'x', 'y'])  #crating a hv.dataset for p_mean
+
+im_ps=ps.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_pv) #creating quadmeshplot for p-values
+im_mean_ps=ps_mean.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_pv)
+
+
+
+im = ds.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)                                                                                    
+                                                                                      
+im_pv = hv.operation.contours(im_ps,levels=[0.01,0.05]) #quadmesh to contours_plot
+
+im_mean= ds_2.to(hv.QuadMesh, ['x', 'y'], dynamic=True, label="Average across all ens").redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
+
+im_mean_pv= hv.operation.contours(im_mean_ps,levels=3)
+                                            
+layout=hv.Layout(im*im_pv+im_mean*im_mean_pv).cols(1)
 layout
 # -
-
+hv.help(hv.Contours)
 
