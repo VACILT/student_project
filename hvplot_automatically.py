@@ -69,6 +69,8 @@ ds_sel['coefs']
 # [QuadMesh](http://holoviews.org/reference/elements/bokeh/QuadMesh.html)
 #
 # [multi-dimensional dictionary of HoloViews objects](http://holoviews.org/reference/containers/bokeh/HoloMap.html)
+#
+# [Widget](https://hvplot.holoviz.org/user_guide/Widgets.html)
 
 # +
 ds = hv.Dataset(ds_sel[['coefs']], kdims = ['month','reg','ens', 'x', 'y'])
