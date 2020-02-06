@@ -36,7 +36,7 @@ from ipywebrtc.webrtc import VideoRecorder, WidgetStream
 
 # ### functions
 
-def combine_pvalues_ufunc(arr, axis):
+def combine_pvalues_ufunc(arr):
     _, pc = combine_pvalues(arr, method = 'stouffer')
     return pc
 
@@ -63,7 +63,7 @@ ds_sel['ens'] = ens_ls
 ds_sel['month']=np.arange(1,13,1) #ds_sel
 ds_mean=ds_sel.mean('ens')#reduce one dimension by average "ens"
 
-ds_mean_ps=ds_sel.assign(z_score=0.5*((ds_sel.p_values))) #using the stouffer's method to combine p values
+ds_mean_ps=ds_sel.assign(z_score=combine_pvalues_ufunc()) #using the stouffer's method to combine p values
 ds_mean_ps=ds_mean_ps.sum('ens')
 # -
 
