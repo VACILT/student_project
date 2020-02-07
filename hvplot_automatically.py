@@ -32,14 +32,24 @@ import glob
 from scipy.stats import combine_pvalues
 hv.extension('bokeh')
 from ipywebrtc.webrtc import VideoRecorder, WidgetStream
+import scipy.stats as st
 
 
 # ### functions
+# [https://stackoverflow.com/questions/20864847/probability-to-z-score-and-vice-versa-in-python]
 
+# +
 def combine_pvalues_ufunc(arr):
-    _, pc = combine_pvalues(arr, method = 'stouffer')
-    return pc
+    _, pv = combine_pvalues(arr, method = 'stouffer')
+    return pv
 
+def get_z_score(p_value):
+    x=st.norm.ppf(p_value)
+    z=st.norm.cdf(x)
+    return z
+
+
+# -
 
 # ### combine files
 # - [creating-a-dataset](http://xarray.pydata.org/en/stable/data-structures.html#creating-a-dataset)
@@ -48,7 +58,7 @@ def combine_pvalues_ufunc(arr):
 invar = 'zmnoy'
 infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
 ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
-#ds_xa
+ds_xa
 
 # ### select data
 
@@ -63,8 +73,8 @@ ds_sel['ens'] = ens_ls
 ds_sel['month']=np.arange(1,13,1) #ds_sel
 ds_mean=ds_sel.mean('ens')#reduce one dimension by average "ens"
 
-ds_mean_ps=ds_sel.assign(z_score=combine_pvalues_ufunc()) #using the stouffer's method to combine p values
-ds_mean_ps=ds_mean_ps.sum('ens')
+temp = xr.apply_ufunc(combine_pvalues_ufunc, ds_sel['p_values'], input_core_dims=[['ens']], \
+               output_core_dims = [[]], vectorize = True, dask = 'allowed')
 # -
 
 # ### plot data
@@ -92,7 +102,7 @@ hvc_opts_pv = dict(logy = True, symmetric=True, colorbar = True, invert_yaxis=Tr
 ds = hv.Dataset(ds_sel[['coefs']], kdims = ['month','reg','ens', 'x', 'y'])
 ds_2 = hv.Dataset(ds_mean[['coefs']], kdims = ['month','reg' ,'x', 'y'])
 ps = hv.Dataset(ds_sel[['p_values']], kdims = ['month','reg','ens', 'x', 'y']) #crating a hv.dataset for p_values
-ps_mean = hv.Dataset(ds_mean_ps[['z_score']], kdims = ['month','reg', 'x', 'y'])  #crating a hv.dataset for p_mean
+ps_mean = hv.Dataset(temp, kdims = ['month','reg', 'x', 'y'])  #crating a hv.dataset for p_mean
 
 im_ps=ps.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_pv) #creating quadmeshplot for p-values
 im_mean_ps=ps_mean.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_pv)
@@ -109,6 +119,6 @@ im_mean_pv= hv.operation.contours(im_mean_ps,levels=[0.01,0.05])
                                             
 layout=hv.Layout(im*im_pv+im_mean*im_mean_pv).cols(1)
 layout
-# -
-hv.help(hv.Contours)
+# +
+#hv.help(hv.Contours)
 
