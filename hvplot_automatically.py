@@ -33,22 +33,24 @@ from scipy.stats import combine_pvalues
 hv.extension('bokeh')
 from ipywebrtc.webrtc import VideoRecorder, WidgetStream
 import scipy.stats as st
+import panel as pn
 
 
 # ### functions
-# [https://stackoverflow.com/questions/20864847/probability-to-z-score-and-vice-versa-in-python]
 
 # +
 def combine_pvalues_ufunc(arr):
     _, pv = combine_pvalues(arr, method = 'stouffer')
     return pv
+def get_standardized_values(arr):
+    v=arr/np.nanmax(arr, axis=None)
+    return v
 
-def get_z_score(p_value):
-    x=st.norm.ppf(p_value)
-    z=st.norm.cdf(x)
-    return z
-
-
+x=np.arange(1.0,11.0,1)
+x[1]=None
+y=get_standardized_values(x)
+z=max(y)
+z
 # -
 
 # ### combine files
@@ -58,14 +60,13 @@ def get_z_score(p_value):
 invar = 'zmnoy'
 infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
 ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
-ds_xa
+#ds_xa
 
 # ### select data
 
 # +
 ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 month_names = ['January', 'February','March','April','May','June','July','Aug','Sep','Oct','Nov','Dec']
-sel_dict = dict()          #set two dims to a fixed value
 ds_sel = ds_xa.sel().rename({'lat': 'x', 'plev': 'y'}) #rename lat to x and pressure level to y
 ds_sel['coefs'].attrs['units'] = '%' #ds_sel['coefs'] only takes the coefs of the dataset
 ds_sel['ens'] = ens_ls
@@ -75,6 +76,9 @@ ds_mean=ds_sel.mean('ens')#reduce one dimension by average "ens"
 
 temp = xr.apply_ufunc(combine_pvalues_ufunc, ds_sel['p_values'], input_core_dims=[['ens']], \
                output_core_dims = [[]], vectorize = True, dask = 'allowed')
+ds_sel['coefs']=xr.apply_ufunc(get_standardized_values,ds_sel['coefs'],input_core_dims=[['x', 'y']],output_core_dims=[['x', 'y']],vectorize = True, dask = 'allowed')
+ds_mean['coefs']=xr.apply_ufunc(get_standardized_values,ds_sel['coefs'],input_core_dims=[['x', 'y']],output_core_dims=[['x', 'y']],vectorize = True, dask = 'allowed')
+
 # -
 
 # ### plot data
@@ -87,38 +91,18 @@ temp = xr.apply_ufunc(combine_pvalues_ufunc, ds_sel['p_values'], input_core_dims
 # [Widget](https://hvplot.holoviz.org/user_guide/Widgets.html)
 
 # +
-vmax = 40
-vmin = -vmax
-f_width = 300
+pv_opts = dict(width=300, colorbar = False, logy = True, cmap = ['black', 'gray'], levels=[0.01,0.05])
+co_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, tools = ['hover'], frame_width = f_width)
 
-hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
-                tools = ['hover'], invert_yaxis=True, frame_width = f_width)
+coefs_mean = ds_mean['coefs'].hvplot.quadmesh('x','y',**co_opts).redim.range(coefs=(-1.0,1.0)).opts(opts.QuadMesh(title='Average', invert_yaxis=True))
+coefs = ds_sel['coefs'].hvplot.quadmesh('x','y',**co_opts).redim.range(coefs=(-1.0,1.0)).opts(opts.QuadMesh(title='Model', invert_yaxis=True))
 
-hvc_opts_pv = dict(logy = True, symmetric=True, colorbar = True, invert_yaxis=True, frame_width = f_width) #initialize options data for axis
+pv_mean = temp.hvplot.contour('x','y',**pv_opts)
+pv = ds_sel['p_values'].hvplot.contour('x','y',**pv_opts)
 
-
-
-
-ds = hv.Dataset(ds_sel[['coefs']], kdims = ['month','reg','ens', 'x', 'y'])
-ds_2 = hv.Dataset(ds_mean[['coefs']], kdims = ['month','reg' ,'x', 'y'])
-ps = hv.Dataset(ds_sel[['p_values']], kdims = ['month','reg','ens', 'x', 'y']) #crating a hv.dataset for p_values
-ps_mean = hv.Dataset(temp, kdims = ['month','reg', 'x', 'y'])  #crating a hv.dataset for p_mean
-
-im_ps=ps.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_pv) #creating quadmeshplot for p-values
-im_mean_ps=ps_mean.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts_pv)
-
-
-
-im = ds.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)                                                                                    
-                                                                                      
-im_pv = hv.operation.contours(im_ps,levels=[0.01,0.05]) #quadmesh to contours_plot
-
-im_mean= ds_2.to(hv.QuadMesh, ['x', 'y'], dynamic=True, label="Average across all ens").redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
-
-im_mean_pv= hv.operation.contours(im_mean_ps,levels=[0.01,0.05])
-                                            
-layout=hv.Layout(im*im_pv+im_mean*im_mean_pv).cols(1)
+layout=hv.Layout(coefs*pv+coefs_mean*pv_mean).cols(1)
 layout
-# +
+# -
+
 #hv.help(hv.Contours)
 
