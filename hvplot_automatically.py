@@ -31,14 +31,12 @@ import hvplot.xarray
 import glob
 from scipy.stats import combine_pvalues
 hv.extension('bokeh')
-from ipywebrtc.webrtc import VideoRecorder, WidgetStream
 import scipy.stats as st
 import panel as pn
 
 
 # ### functions
 
-# +
 def combine_pvalues_ufunc(arr):
     _, pv = combine_pvalues(arr, method = 'stouffer')
     return pv
@@ -46,12 +44,6 @@ def get_standardized_values(arr):
     v=arr/np.nanmax(arr, axis=None)
     return v
 
-x=np.arange(1.0,11.0,1)
-x[1]=None
-y=get_standardized_values(x)
-z=max(y)
-z
-# -
 
 # ### combine files
 # - [creating-a-dataset](http://xarray.pydata.org/en/stable/data-structures.html#creating-a-dataset)
@@ -77,7 +69,7 @@ ds_mean=ds_sel.mean('ens')#reduce one dimension by average "ens"
 temp = xr.apply_ufunc(combine_pvalues_ufunc, ds_sel['p_values'], input_core_dims=[['ens']], \
                output_core_dims = [[]], vectorize = True, dask = 'allowed')
 ds_sel['coefs']=xr.apply_ufunc(get_standardized_values,ds_sel['coefs'],input_core_dims=[['x', 'y']],output_core_dims=[['x', 'y']],vectorize = True, dask = 'allowed')
-ds_mean['coefs']=xr.apply_ufunc(get_standardized_values,ds_sel['coefs'],input_core_dims=[['x', 'y']],output_core_dims=[['x', 'y']],vectorize = True, dask = 'allowed')
+ds_mean['coefs']=xr.apply_ufunc(get_standardized_values,ds_mean['coefs'],input_core_dims=[['x', 'y']],output_core_dims=[['x', 'y']],vectorize = True, dask = 'allowed')
 
 # -
 
@@ -92,7 +84,7 @@ ds_mean['coefs']=xr.apply_ufunc(get_standardized_values,ds_sel['coefs'],input_co
 
 # +
 pv_opts = dict(width=300, colorbar = False, logy = True, cmap = ['black', 'gray'], levels=[0.01,0.05])
-co_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, tools = ['hover'], frame_width = f_width)
+co_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, tools = ['hover'], frame_width = 300)
 
 coefs_mean = ds_mean['coefs'].hvplot.quadmesh('x','y',**co_opts).redim.range(coefs=(-1.0,1.0)).opts(opts.QuadMesh(title='Average', invert_yaxis=True))
 coefs = ds_sel['coefs'].hvplot.quadmesh('x','y',**co_opts).redim.range(coefs=(-1.0,1.0)).opts(opts.QuadMesh(title='Model', invert_yaxis=True))
@@ -104,5 +96,5 @@ layout=hv.Layout(coefs*pv+coefs_mean*pv_mean).cols(1)
 layout
 # -
 
-#hv.help(hv.Contours)
+# #hv.help(hv.Contours)
 
