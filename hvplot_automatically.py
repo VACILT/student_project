@@ -52,7 +52,7 @@ def get_standardized_values(arr):
 invar = 'zmnoy'
 infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
 ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
-#ds_xa
+ds_xa
 
 # ### select data
 
