@@ -1,0 +1,14 @@
+name: environment
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - holoviews
+  - xarray
+  - glob
+  - pathlib
+  - pandas
+  - panel
+  - bokeh
+  - scipy.stats
+  - hvplot.xarray
