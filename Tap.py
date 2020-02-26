@@ -23,6 +23,7 @@ from holoviews import opts
 import hvplot.xarray
 hv.extension('bokeh')
 import xarray as xr
+import panel as pn
 
 # - [Heatmap](http://holoviews.org/reference/elements/bokeh/HeatMap.html)
 # - [Tap](http://holoviews.org/reference/streams/bokeh/Tap.html)
@@ -43,33 +44,20 @@ ds['per'] = ['1960-2099','2011-2099','1960-2010']
 
 ds_sel=ds.sel(ens='WACCM_r1', per ='1960-2099',var='zmnoy', reg='CO2EQ')
 #ds_sel
-
-# +
-dataset = hv.Dataset(ds_sel, vdims=('coefs'))
-
-# Declare HeatMap
-heatmap = hv.HeatMap(dataset.aggregate(['lat', 'plev'], np.mean),
-                     label='select location')
-# Declare Tap stream with heatmap as source and initial values
-posxy = hv.streams.DoubleTap(source=heatmap, x=0.0, y=1000.0)
-
-
-# +
-# Define function to compute histogram based on tap location
-def tap_histogram(x, y):
-    return hv.Curve(dataset.select(lat=x, plev=y), kdims='month',
-                   label='lat: %s°, plev: %shPa' % (x, y))
-
-tap_dmap = hv.DynamicMap(tap_histogram, streams=[posxy])
-
-(heatmap + tap_dmap).opts(
-    opts.Curve(framewise=True, height=500, line_color='black', width=375, yaxis='right'),
-     opts.HeatMap(cmap='RdBu_r', fontsize={'xticks': '6pt'}, height=500,
-                 tools=['hover'], width=500, xrotation=90,invert_xaxis=True, invert_yaxis=True)
-)
-
-# +
-#hv.help(hv.HeatMap)
 # -
 
+dataset = hv.Dataset(ds_sel, vdims=('coefs'))
 
+# with @pn.depends() the function is called whenever a value is changing. x and y are the coordinates of the click
+
+# +
+hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
+                tools = ['hover'], invert_yaxis=True, frame_width = 300)
+im = dataset.to(hv.QuadMesh, ['lat', 'plev'], dynamic=True).redim.range(coefs=(-40,40)).opts(**hvc_opts)
+
+stream = hv.streams.Tap(source=im, x=0, y=850)
+
+@pn.depends(stream.param.x, stream.param.y)
+def plot(x, y):
+    return hv.Curve([(i, x/y*i) for i in range(100)])
+pn.Row(im, plot)
