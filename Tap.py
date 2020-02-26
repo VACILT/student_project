@@ -28,9 +28,9 @@ import xarray as xr
 # - [Tap](http://holoviews.org/reference/streams/bokeh/Tap.html)
 
 # +
-infiles_period = sorted(glob.glob(f'zmnoy_full/*1960-2099*.nc'))
-infiles_new = sorted(glob.glob(f'zmnoy_full/*2011-2099*.nc'))
-infiles_old = sorted(glob.glob(f'zmnoy_full/*1960-2010*.nc'))
+infiles_period = sorted(glob.glob(f'data/*1960-2099*.nc'))
+infiles_new = sorted(glob.glob(f'data/*2011-2099*.nc'))
+infiles_old = sorted(glob.glob(f'data/*1960-2010*.nc'))
 
 cascade_infiles = [[infiles_period[0:4], infiles_period[4:8],infiles_period[8:12],infiles_period[12:16]], \
 [infiles_new[0:4], infiles_new[4:8],infiles_new[8:12],infiles_new[12:16]], \
@@ -67,9 +67,9 @@ tap_dmap = hv.DynamicMap(tap_histogram, streams=[posxy])
      opts.HeatMap(cmap='RdBu_r', fontsize={'xticks': '6pt'}, height=500,
                  tools=['hover'], width=500, xrotation=90,invert_xaxis=True, invert_yaxis=True)
 )
+
+# +
+#hv.help(hv.HeatMap)
 # -
-
-hv.help(hv.HeatMap)
-
 
 
