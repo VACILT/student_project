@@ -24,6 +24,8 @@ import hvplot.xarray
 hv.extension('bokeh')
 import xarray as xr
 import panel as pn
+import numpy as np
+import matplotlib.pyplot as plt
 
 # - [Heatmap](http://holoviews.org/reference/elements/bokeh/HeatMap.html)
 # - [Tap](http://holoviews.org/reference/streams/bokeh/Tap.html)
@@ -43,8 +45,13 @@ ds['var'] = ['zmnoy','zmo3','zmta','zmua']
 ds['per'] = ['1960-2099','2011-2099','1960-2010']
 
 ds_sel=ds.sel(ens='WACCM_r1', per ='1960-2099',var='zmnoy', reg='CO2EQ')
-#ds_sel
+ds_sel
 # -
+
+ds =np.array(ds_sel['coefs'])
+#ds.shape
+y_coors=np.array(ds_sel['plev'])
+x_coors=np.array(ds_sel['lat'])
 
 dataset = hv.Dataset(ds_sel, vdims=('coefs'))
 
@@ -55,9 +62,12 @@ hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
                 tools = ['hover'], invert_yaxis=True, frame_width = 300)
 im = dataset.to(hv.QuadMesh, ['lat', 'plev'], dynamic=True).redim.range(coefs=(-40,40)).opts(**hvc_opts)
 
-stream = hv.streams.Tap(source=im, x=0, y=850)
+stream = hv.streams.Tap(source=im, x=0.0, y=1000.0)
 
 @pn.depends(stream.param.x, stream.param.y)
 def plot(x, y):
-    return hv.Curve([(i, x/y*i) for i in range(100)])
-pn.Row(im, plot)
+    idx = (np.abs((x_coors)-x)).argmin()
+    idy = (np.abs((y_coors)-y)).argmin()
+    return plt.plot(np.arange(1,13,1),ds[:,idy,idx])
+
+pn.Column(im, plot)
