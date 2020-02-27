@@ -27,16 +27,17 @@ import xarray as xr
 import hvplot.xarray
 import glob
 from scipy.stats import combine_pvalues
+import pandas as pd
+import panel as pn
+from itertools import cycle
 hv.extension('bokeh')
-
-from ipywebrtc.webrtc import VideoRecorder, WidgetStream
 
 # # Data loading
 
 invar = 'zmnoy'
-infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
+infiles =  sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
 ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
-ds_xa
+#ds_xa
 
 sel_reg = 'f107'
 sel_month = 1
@@ -45,57 +46,63 @@ sel_dict = dict(reg = sel_reg, month = sel_month)
 ds_sel = ds_xa.sel(**sel_dict).rename({'lat': 'x', 'plev': 'y'})
 ds_sel['coefs'].attrs['units'] = '%'
 ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
-ds_sel['ens'] = range(4)
+ds_sel['ens'] = ens_ls#range(4)
 #ds_sel
 
 # +
-ds = hv.Dataset(ds_sel[['coefs']], kdims = ['ens', 'x', 'y'])
-vmax = 40
-vmin = -vmax
-f_width = 300
-im_opts = dict(cmap = 'RdBu_r', symmetric=True, colorbar = True, \
-                tools = ['hover'], invert_yaxis=True, frame_width = f_width)
+def create_taps_graph(x, y):
+    """
+    from: https://github.com/intake/xrviz/blob/master/xrviz/dashboard.py#L369
+    """
+    colors = ['#60fffc', '#6da252', '#ff60d4', '#ff9400', '#f4e322',
+                  '#229cf4', '#af9862', '#629baf', '#7eed5a', '#e29ec8',
+                  '#ff4300']
+    color_pool = cycle(colors)
+    color = next(iter(color_pool))
+    print(color)
+    if None not in [x, y]:
+        taps.append((x, y, color))
 
-im = ds.to(hv.HeatMap, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**im_opts)
-im2 = ds.aggregate(['x','y'], np.mean).to(hv.HeatMap, ['x', 'y'])
-im2 = im2.redim.range(coefs=(vmin,vmax)).opts(**im_opts)
-
-# +
-# Declare Tap stream with quadmesh as source and initial values
-posxy = hv.streams.DoubleTap(source=im, x=0.0, y=1000.0)
-def tap_histogram(x, y):
-    return hv.Curve(ds.select(x=x, y=y), kdims='ens',
-                   label='lat: %s°, plev: %shPa' % (x, y))
-
-tap_dmap = hv.DynamicMap(tap_histogram, streams=[posxy])
-
-
-# -
-
-def combine_pvalues_ufunc(arr):
-    _, pv = combine_pvalues(arr, method = 'stouffer')
-    return pv
-
+    tapped_map = hv.Points(taps, vdims=['z'])
+    tapped_map.opts(color='z', marker='triangle', line_color='black',
+                    size=8)
+    
+    return tapped_map
+    
+    
 
 # +
-hvc_opts = dict(width=300,  colorbar = False, \
-                                     logy = True, cmap = ['black'], \
-                                               levels=[0.01,0.05])
+graph_opts = dict(cmap = 'RdBu_r', symmetric=True, logy = True, colorbar = True, \
+                width = 400, ylim=(1000,0.1), active_tools=['wheel_zoom', 'pan'])
+sel_data = ds_sel
+graph = sel_data['coefs'].hvplot.quadmesh(x = 'x', y = 'y').opts(**graph_opts)
 
 
-temp = xr.apply_ufunc(combine_pvalues_ufunc, ds_sel['p_values'], input_core_dims=[['ens']], \
-               output_core_dims = [[]], vectorize = True, dask = 'allowed')
+points = graph#hv.Points([])
+taps = []
+stream = hv.streams.Tap(source=points, x=np.nan, y=np.nan)
 
-imgs_pv=ds_sel['p_values'].hvplot.contour(**hvc_opts)
-imgs_pv2 = temp.hvplot.contour(**hvc_opts)
-# -
-
-first_panel = im
-second_panel = (tap_dmap).relabel('Tap')
-second_row = ((im2).relabel('Model average (p-values combined using Z-score)'))
-(((first_panel + second_panel).opts(
-    opts.Curve(width=400, framewise=True), 
-    )+second_row).cols(2)
-)
+tap_stream = hv.streams.Tap(transient=True)
+tap_stream.source = graph
+taps_graph = hv.DynamicMap(
+                create_taps_graph,
+                streams=[tap_stream])
 
 
+
+
+@pn.depends(stream.param.x, stream.param.y)
+def location(x, y):
+    """
+    from: https://discourse.holoviz.org/t/example-of-using-holoviews-tapstream-with-panel/166/3
+    """
+    first_column = pn.pane.Str(f'Click at {x:.2f}, {y:.2f}')
+    if np.nan not in [x,y]:
+        temp = sel_data.sel(x=x,y=y, method = 'nearest')
+        temp2 = temp['coefs'].where(temp['p_values'] < 0.05) # mark stat. sign. values
+        second_column = temp['coefs'].hvplot(width = 300) * temp2.hvplot.scatter(c='k')
+    else:
+        second_column = pn.Spacer(name='Series Graph')
+    return pn.Column(first_column, second_column)
+    
+pn.Row(graph*taps_graph, location) # 
