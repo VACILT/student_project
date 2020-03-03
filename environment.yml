@@ -1,17 +1,17 @@
 name: environment
 channels:
-   - pyviz
+  - pyviz
   - anaconda
   - conda-forge
   - defaults
 dependencies:
-  - numpy
-  - holoviews
-  - xarray
-  - glob
-  - pathlib
-  - pandas
-  - panel
-  - bokeh
-  - scipy.stats
-  - hvplot.xarray
+ - numpy
+ - holoviews
+ - xarray
+ - glob
+ - pathlib
+ - pandas
+ - panel
+ - bokeh
+ - scipy.stats
+ - hvplot.xarray
