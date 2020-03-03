@@ -5,13 +5,13 @@ channels:
   - conda-forge
   - defaults
 dependencies:
- - numpy
- - holoviews
- - xarray
- - glob
- - pathlib
- - pandas
- - panel
- - bokeh
- - scipy.stats
- - hvplot.xarray
+ - numpy=1.15.4=py37ha559c80_0
+ - holoviews=1.12.7=py_0
+ - xarray=0.13.0=py_0
+ - glob2=0.6=py37_0
+ - pathlib2=2.3.2=py37_0
+ - pandas=0.23.4=py37h830ac7b_0
+ - panel=0.7.0=py_0
+ - bokeh=1.4.0=py37_0
+ - scipy=1.1.0=py37h4f6bf74_1
+ - hvplot=0.5.2=py_0
