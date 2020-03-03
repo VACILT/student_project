@@ -1,7 +1,6 @@
 name: environment
 channels:
    - pyviz
-  - anaconda
   - conda-forge
   - defaults
 dependencies:
