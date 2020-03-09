@@ -17,3 +17,5 @@ dependencies:
  - hvplot=0.5.2=py_0
  - netcdf4=1.4.2
  - matplotlib=3.0.2
+ - dask=0.19.1
+ - dask-core=0.19.1
