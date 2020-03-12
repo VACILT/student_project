@@ -60,13 +60,14 @@ plot_var = '1'       # 0 for Tapplot, 1 for Roi-drawer
 
 # ## rearange/ rename dataset
 
-sel_dict = dict(reg=sel_reg, month = sel_month, per=sel_per, var=sel_var)
+sel_dict = dict(reg=sel_reg, per=sel_per, var=sel_var)
 ds_sel = ds.sel(**sel_dict).rename({'lat': 'x', 'plev': 'y'})
 ds_sel['coefs'].attrs['units'] = '%'
 ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 month_names = ['January', 'February','March','April','May','June','July','Sep','Oct','Nov','Dec']
 ds_sel['ens'] = range(4)
-ds_sel['ens']
+ds_sel['month'] = range(12)
+ds_sel
 
 
 # ## define Tap-plot
@@ -107,30 +108,35 @@ taps = []
 stream = hv.streams.Tap(source=graph, x=np.nan, y=np.nan)
 tap_stream = hv.streams.Tap(transient=True)
 tap_stream.source = graph
-taps_graph = hv.DynamicMap(
+taps_graph = hv.DynamicMap(    
                 create_taps_graph,
                 streams=[tap_stream])
 
-@pn.depends(stream.param.x, stream.param.y)
-def location(x, y):
-    """
-    from: https://discourse.holoviz.org/t/example-of-using-holoviews-tapstream-with-panel/166/3
-    """
-    first_column = pn.pane.Str(f'Click at {x:.2f}, {y:.2f}')
+month_selec = pn.widgets.IntSlider(name='', value=1, start=0, end=11)
+
+@pn.depends(stream.param.x, stream.param.y, month_sel=month_selec.param.value)
+def location(x, y, month_sel):
+
+    first_column = pn.pane.Str(f'Click at {x:.2f}, {y:.2f}, month = {month_sel:.0f}')
     if np.nan not in [x,y]:
-        temp = ds_sel.sel(x=x,y=y, method = 'nearest')
+
+
+        temp3=ds_sel.sel(month=month_sel)
+        temp = temp3.sel(x=x,y=y, method = 'nearest')
         temp2 = temp['coefs'].where(temp['p_values'] < 0.05) # mark stat. sign. values
         second_column = temp['coefs'].hvplot(width = 400) * temp2.hvplot.scatter(c='k')
     else:
         second_column = pn.Spacer(name='Series Graph')
-    return pn.Column(first_column, second_column)
+    return pn.Column(first_column, second_column, month_selec)
     
 #  adding panel to gain control over widgets
 hv_panel = pn.panel(graph*taps_graph)
 #hv_panel.pprint()
-widgets = hv_panel[1]
+month_slider = hv_panel[1][0][1]
+widgets =hv_panel[1]
 
 # +
+
 gspec = pn.GridSpec(width=800, height=600)
 gspec[0, 0] = hv.Div("""<h2 align="center">Tap-plot</h2>""")
 gspec[0, 1]=hv_div
