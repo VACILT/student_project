@@ -60,18 +60,18 @@ plot_var = '1'       # 0 for Tapplot, 1 for Roi-drawer
 
 # ## rearange/ rename dataset
 
-sel_dict = dict(reg=sel_reg, per=sel_per, var=sel_var)
+sel_dict = dict(var=sel_var)
 ds_sel = ds.sel(**sel_dict).rename({'lat': 'x', 'plev': 'y'})
 ds_sel['coefs'].attrs['units'] = '%'
 ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 month_names = ['January', 'February','March','April','May','June','July','Sep','Oct','Nov','Dec']
 ds_sel['ens'] = range(4)
-ds_sel['month'] = range(12)
-ds_sel
+ds_sel['month'] = np.arange(1,13,1)
+ds_sel['per']
 
 
 # ## define Tap-plot
-# We used the holoviews streams.Tap-function to track taps on the quadmesh plot. Out of that, we created a curve comparing the different models on one certain location.
+# We used the holoviews streams Tap-function to track taps on the quadmesh plot. Out of that, we created a curve comparing the different models on one certain location.
 
 def create_taps_graph(x, y):
     """
@@ -112,37 +112,43 @@ taps_graph = hv.DynamicMap(
                 create_taps_graph,
                 streams=[tap_stream])
 
-month_selec = pn.widgets.IntSlider(name='', value=1, start=0, end=11)
+# creating widgets
+month_selec = pn.widgets.IntSlider(name='Month', value=1, start=1, end=12)
+reg_selec=pn.widgets.Select(name='Regressor', options=['CO2EQ', 'EESC', 'ENSO', 'QBO30', 'QBO50', 'eep_for_noy_and_o3',
+       'epp_for_t_and_u', 'f107', 'intercept', 'spe_for_noy_and_o3',
+       'spe_for_t_and_u'])
+per_selec= pn.widgets.RadioBoxGroup(name='Period', options=['1960-2099', '2011-2099', '1960-2010'], inline=True)
 
-@pn.depends(stream.param.x, stream.param.y, month_sel=month_selec.param.value)
-def location(x, y, month_sel):
+@pn.depends(stream.param.x, stream.param.y, month_sel=month_selec.param.value,
+            reg_sel=reg_selec.param.value, per_sel=per_selec.param.value)
+def location(x, y, month_sel, reg_sel, per_sel):
 
-    first_column = pn.pane.Str(f'Click at {x:.2f}, {y:.2f}, month = {month_sel:.0f}')
+    first_column = pn.pane.Str(f'Click at {x:.2f}, {y:.2f}, month = {month_sel:.0f} , reg = {reg_sel} , per = {per_sel}')
     if np.nan not in [x,y]:
 
 
-        temp3=ds_sel.sel(month=month_sel)
+        temp3=ds_sel.sel(month=month_sel, reg=reg_sel, per=per_sel)
         temp = temp3.sel(x=x,y=y, method = 'nearest')
         temp2 = temp['coefs'].where(temp['p_values'] < 0.05) # mark stat. sign. values
         second_column = temp['coefs'].hvplot(width = 400) * temp2.hvplot.scatter(c='k')
     else:
         second_column = pn.Spacer(name='Series Graph')
-    return pn.Column(first_column, second_column, month_selec)
+    return pn.Column(first_column, second_column, month_selec, reg_selec, per_selec)
     
 #  adding panel to gain control over widgets
 hv_panel = pn.panel(graph*taps_graph)
-#hv_panel.pprint()
-month_slider = hv_panel[1][0][1]
+hv_panel.pprint()
+#month_slider = hv_panel[1][0][1]
 widgets =hv_panel[1]
 
 # +
 
 gspec = pn.GridSpec(width=800, height=600)
 gspec[0, 0] = hv.Div("""<h2 align="center">Tap-plot</h2>""")
-gspec[0, 1]=hv_div
+gspec[0, 1] = hv_div
 gspec[1:4, 0] = hv_panel[0]
 gspec[1:3, 1] = location
-gspec[4, :] = (widgets)
+gspec[4, 0] = (widgets)
     
 gspec
 # -
