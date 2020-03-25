@@ -25,7 +25,7 @@ panel
 conda install -c pyviz panel
 ```
 ### Optional:
-[jupytext](https://github.com/mwouts/jupytext/blob/master/README.md) shows code differenzes with jupyter notebook
+[jupytext](https://github.com/mwouts/jupytext/blob/master/README.md) shows code differences with jupyter notebook
 ```sh
 conda install -c conda-forge jupytext
 ```
