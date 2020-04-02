@@ -54,10 +54,10 @@ ds_sel = ds.rename({'lat': 'x', 'plev': 'y'})
 ds_sel['coefs'].attrs['units'] = '%'
 ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 month_names = ['January', 'February','March','April','May','June','July','August','September','October','November','December']
-ens_names = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
-ds_sel['ens'] = range(4)
+ds_sel['ens'] = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 ds_sel['month'] = np.arange(1,13,1)
-#ds_sel['var']
+ds_sel.var()
+
 
 # ## define Tap-plot
 # We used the holoviews streams Tap-function to track taps on the quadmesh plot. Out of that, we created a curve comparing the different models on one certain location.
@@ -84,7 +84,7 @@ def create_taps_graph(x, y):
 # creating widgets
 month_selec =  pn.widgets.IntSlider(name='Month', value=1, start=1, end=12)
 
-ens_selec   =  pn.widgets.IntSlider(name='Ens', value=1, start=0, end=3)
+ens_selec   =  pn.widgets.RadioBoxGroup(name='Ens', options=['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL'], inline=True)
 
 reg_selec   =  pn.widgets.Select(name='Regressor', options=['CO2EQ', 'EESC', 'ENSO', 'QBO30', 'QBO50', 'eep_for_noy_and_o3',
        'epp_for_t_and_u', 'f107', 'intercept', 'spe_for_noy_and_o3',
@@ -109,13 +109,15 @@ tap_stream.source = graph
 taps_graph = hv.DynamicMap(    
                 create_taps_graph,
                 streams=[tap_stream])
+x_list=[]
+y_list=[]
 
 @pn.depends(stream.param.x, stream.param.y, month_sel=month_selec.param.value,
             reg_sel=reg_selec.param.value, per_sel=per_selec.param.value,
             ens_sel=ens_selec.param.value, var_sel=var_selec.param.value)
 def location(x, y, month_sel, reg_sel, per_sel, ens_sel, var_sel):
 
-    first_column = pn.pane.Markdown(f'#### Click at {x:.2f}, {y:.2f} </br> <b>{var_sel}</b> response to <b>{reg_sel}</b> in <b>{month_names[month_sel-1]}</b></br> choosen period: <b>{per_sel}</b></br> choosen model: <b>{ens_names[ens_sel]}</b>', style={'font-family': "calibri",'color':"green"})
+    first_column = pn.pane.Markdown(f'#### Click at {x:.2f}, {y:.2f}</br> <b>{var_sel}</b> response to <b>{reg_sel}</b> in <b>{month_names[month_sel-1]}</b></br> choosen period: <b>{per_sel}</b></br> choosen model: <b>{ens_sel}</b>', style={'font-family': "calibri",'color':"green"})
     hv_panel[1][0][0].value=per_sel
     hv_panel[1][0][1].value=var_sel
     hv_panel[1][0][2].value=ens_sel
@@ -124,13 +126,17 @@ def location(x, y, month_sel, reg_sel, per_sel, ens_sel, var_sel):
     box = pn.WidgetBox(var_selec, per_selec, reg_selec, month_selec, ens_selec,width=390)
     if np.nan not in [x,y]:
 
-
         temp3=ds_sel.sel(month=month_sel, reg=reg_sel, per=per_sel, var=var_sel)
         temp = temp3.sel(x=x,y=y, method = 'nearest')
+        if (temp['coefs']['x'].values) not in x_list:
+            x_list.append(float(temp['coefs']['x'].values))
+        if (temp['coefs']['y'].values) not in y_list:
+            y_list.append(float(temp['coefs']['y'].values))
+        
         temp2 = temp['coefs'].where(temp['p_values'] < 0.05) # mark stat. sign. values
         second_column = temp['coefs'].hvplot(width = 400) * temp2.hvplot.scatter(c='k')
     else:
-        second_column = pn.Spacer(name='Series Graph')
+        second_column = pn.Spacer(name='Series Graph',width=400)
     return pn.Column(first_column, second_column, box)
     
 #  adding panel to gain control over widgets
@@ -144,4 +150,6 @@ gspec[0, 1] = location
    
 gspec
 # -
+x_list
+
 
