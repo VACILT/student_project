@@ -56,7 +56,6 @@ ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 month_names = ['January', 'February','March','April','May','June','July','August','September','October','November','December']
 ds_sel['ens'] = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 ds_sel['month'] = np.arange(1,13,1)
-ds_sel.var()
 
 
 # ## define Tap-plot
@@ -80,8 +79,11 @@ def create_taps_graph(x, y):
     return tapped_map
 
 
+# ## creating widgets
+# Widgets provide us precise control over parameter values. Widgets will render and sync their state in the notebook.
+# They can easely be manioulated and the callbacks can be used by using the .value finction. 
+
 # +
-# creating widgets
 month_selec =  pn.widgets.IntSlider(name='Month', value=1, start=1, end=12)
 
 ens_selec   =  pn.widgets.RadioBoxGroup(name='Ens', options=['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL'], inline=True)
@@ -93,8 +95,12 @@ reg_selec   =  pn.widgets.Select(name='Regressor', options=['CO2EQ', 'EESC', 'EN
 per_selec   =  pn.widgets.RadioBoxGroup(name='Period', options=['1960-2099', '2011-2099', '1960-2010'], inline=True)
 
 var_selec   =  pn.widgets.RadioBoxGroup(name='Variable', options=['zmnoy', 'zmo3', 'zmta', 'zmua'], inline=True)
+# -
 
+# ## create Quadmesh, Tap, tabel
+#
 
+# +
 #creating Quadmesh
 graph_opts = dict(cmap = 'RdBu_r', symmetric=True, logy = True, colorbar = True, \
                 ylim=(1000,0.1), active_tools=['pan'],title='Tap to compare ens', toolbar="below")
@@ -111,6 +117,7 @@ taps_graph = hv.DynamicMap(
                 streams=[tap_stream])
 x_list=[]
 y_list=[]
+curve_list=[]
 
 @pn.depends(stream.param.x, stream.param.y, month_sel=month_selec.param.value,
             reg_sel=reg_selec.param.value, per_sel=per_selec.param.value,
@@ -134,7 +141,9 @@ def location(x, y, month_sel, reg_sel, per_sel, ens_sel, var_sel):
             y_list.append(float(temp['coefs']['y'].values))
         
         temp2 = temp['coefs'].where(temp['p_values'] < 0.05) # mark stat. sign. values
-        second_column = temp['coefs'].hvplot(width = 400) * temp2.hvplot.scatter(c='k')
+        curve_list.append(temp['coefs'].hvplot(width = 400) * temp2.hvplot.scatter(c='k'))
+        
+        second_column =  hv.Overlay(curve_list).opts(toolbar=None)
     else:
         second_column = pn.Spacer(name='Series Graph',width=400)
     return pn.Column(first_column, second_column, box)
@@ -143,13 +152,21 @@ def location(x, y, month_sel, reg_sel, per_sel, ens_sel, var_sel):
 hv_panel = pn.panel(graph*taps_graph)
 #hv_panel.pprint()
 
+@pn.depends(stream.param.x, stream.param.y)
+def get_tabs_tabel(x, y):
+    table = hv.Table({'X':x_list, 'Y':y_list},['X', 'Y']).opts(bgcolor='red')
+    return pn.Column(table)
+
+
+# -
+
+# ## Gridspec 
+# "The GridSpec layout allows arranging multiple Panel objects in a grid using a simple API to assign objects to individual grid cells or to a grid span."
+
 # +
 gspec = pn.GridSpec(width=800, height=600, margin=5)
-gspec[0, 0] = hv_panel[0]
-gspec[0, 1] = location
-   
+gspec[0:10, 0] = hv_panel[0]
+gspec[0:13, 1] = location
+gspec[11, 0] = get_tabs_tabel
+
 gspec
-# -
-x_list
-
-
