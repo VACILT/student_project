@@ -95,6 +95,7 @@ reg_selec   =  pn.widgets.Select(name='Regressor', options=['CO2EQ', 'EESC', 'EN
 per_selec   =  pn.widgets.RadioBoxGroup(name='Period', options=['1960-2099', '2011-2099', '1960-2010'], inline=True)
 
 var_selec   =  pn.widgets.RadioBoxGroup(name='Variable', options=['zmnoy', 'zmo3', 'zmta', 'zmua'], inline=True)
+reset_button = pn.widgets.Button(name='Reset', button_type='success', value=False)
 # -
 
 # ## create Quadmesh, Tap, tabel
@@ -130,7 +131,8 @@ def location(x, y, month_sel, reg_sel, per_sel, ens_sel, var_sel):
     hv_panel[1][0][2].value=ens_sel
     hv_panel[1][0][3].value=month_sel
     hv_panel[1][0][4].value=reg_sel
-    box = pn.WidgetBox(var_selec, per_selec, reg_selec, month_selec, ens_selec,width=390)
+    box = pn.WidgetBox(var_selec, per_selec, reg_selec, month_selec, ens_selec,reset_button, width=390)   
+        
     if np.nan not in [x,y]:
 
         temp3=ds_sel.sel(month=month_sel, reg=reg_sel, per=per_sel, var=var_sel)
@@ -157,7 +159,13 @@ def get_tabs_tabel(x, y):
     table = hv.Table({'X':x_list, 'Y':y_list},['X', 'Y']).opts(bgcolor='red')
     return pn.Column(table)
 
+def reset(arg=None):
+    curve_list.clear()
+    taps.clear()
+    x_list.clear()
+    y_list.clear()
 
+reset_button.param.watch(reset, 'clicks')
 # -
 
 # ## Gridspec 
