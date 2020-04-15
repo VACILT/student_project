@@ -95,7 +95,15 @@ reg_selec   =  pn.widgets.Select(name='Regressor', options=['CO2EQ', 'EESC', 'EN
 per_selec   =  pn.widgets.RadioBoxGroup(name='Period', options=['1960-2099', '2011-2099', '1960-2010'], inline=True)
 
 var_selec   =  pn.widgets.RadioBoxGroup(name='Variable', options=['zmnoy', 'zmo3', 'zmta', 'zmua'], inline=True)
-reset_button = pn.widgets.Button(name='Reset', button_type='success', value=False)
+reset_button = pn.widgets.Button(name='Reset', button_type='success')
+
+# +
+hvc_opts = dict(frame_width=400, dynamic=True, \
+                                         x = 'x', y = 'y',  colorbar = False, \
+                                      logy = True, symmetric=True, cmap = ['black', 'gray'], \
+                                                levels=[0.01,0.05],ylim=(1000,0.1), legend=False)
+
+imgs_pv = ds_sel['p_values'].hvplot.contour(**hvc_opts)
 # -
 
 # ## create Quadmesh, Tap, tabel
@@ -103,8 +111,8 @@ reset_button = pn.widgets.Button(name='Reset', button_type='success', value=Fals
 
 # +
 #creating Quadmesh
-graph_opts = dict(cmap = 'RdBu_r', symmetric=True, logy = True, colorbar = True, \
-                ylim=(1000,0.1), active_tools=['pan'],title='Tap to compare ens', toolbar="below")
+graph_opts = dict(cmap = 'RdBu_r', symmetric=True, logy = True, colorbar = False, \
+                ylim=(1000,0.1), active_tools=['pan'],title='Tap to compare ens', toolbar="below", frame_width=400)
 
 graph = ds_sel['coefs'].hvplot.quadmesh(x = 'x', y = 'y' ).opts(**graph_opts)
 
@@ -151,7 +159,7 @@ def location(x, y, month_sel, reg_sel, per_sel, ens_sel, var_sel):
     return pn.Column(first_column, second_column, box)
     
 #  adding panel to gain control over widgets
-hv_panel = pn.panel(graph*taps_graph)
+hv_panel = pn.panel(graph*imgs_pv*taps_graph)
 #hv_panel.pprint()
 
 @pn.depends(stream.param.x, stream.param.y)
@@ -178,3 +186,11 @@ gspec[0:13, 1] = location
 gspec[11, 0] = get_tabs_tabel
 
 gspec
+# -
+
+
+
+hv.help(hv.Contours)
+
+
+
