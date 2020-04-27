@@ -13,6 +13,11 @@
 #     name: python3
 # ---
 
+# # Tap-plot
+# ## Interactive visualizations of N-dimensional meteorological data
+#
+# This Notebook let you explore meteorological data in an interactive way. Just run the code and use the dashboard created at the bottom! You may tap on points of interest in the Quadmesh-plot, to show a plot comparing different ensemble members.
+
 import numpy as np
 import holoviews as hv
 from holoviews import opts
@@ -31,7 +36,7 @@ hv.extension('bokeh')
 # Loading all files from the /data library. Combine them by adding new dimensions
 # - per = Period of Survey
 # - var = The considered variable
-# - ens = the choosen model
+# - ens = the choosen ensemble members
 
 # +
 infiles_period = sorted(glob.glob(f'data/*1960-2099*.nc'))
@@ -58,7 +63,7 @@ ds_sel['ens'] = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 ds_sel['month'] = np.arange(1,13,1)
 
 
-# ## define Tap-plot
+# ## Define Tap-plot
 # We used the holoviews streams Tap-function to track taps on the quadmesh plot. Out of that, we created a curve comparing the different models on one certain location.
 
 def create_taps_graph(x, y):
@@ -79,9 +84,9 @@ def create_taps_graph(x, y):
     return tapped_map
 
 
-# ## creating widgets
+# ## Creating widgets
 # Widgets provide us precise control over parameter values. Widgets will render and sync their state in the notebook.
-# They can easely be manioulated and the callbacks can be used by using the .value finction. 
+# They can easely be manipulated and the callbacks can be used by using the .value function. 
 
 # +
 month_selec =  pn.widgets.IntSlider(name='Month', value=1, start=1, end=12)
@@ -95,7 +100,11 @@ reg_selec   =  pn.widgets.Select(name='Regressor', options=['CO2EQ', 'EESC', 'EN
 per_selec   =  pn.widgets.RadioBoxGroup(name='Period', options=['1960-2099', '2011-2099', '1960-2010'], inline=True)
 
 var_selec   =  pn.widgets.RadioBoxGroup(name='Variable', options=['zmnoy', 'zmo3', 'zmta', 'zmua'], inline=True)
-reset_button = pn.widgets.Button(name='Reset', button_type='success')
+reset_button = pn.widgets.Button(name='Reset on next tap', button_type='success')
+# -
+
+# ## Adding p-values
+# Overlaying the coefs with associated p-values, shows the area of confidence. This is done by the .contour() function.
 
 # +
 hvc_opts = dict(frame_width=400, dynamic=True, \
@@ -106,8 +115,10 @@ hvc_opts = dict(frame_width=400, dynamic=True, \
 imgs_pv = ds_sel['p_values'].hvplot.contour(**hvc_opts)
 # -
 
-# ## create Quadmesh, Tap, tabel
+# ## Create Quadmesh, Tap-stream
+# - Creating a Heatmap-like plot to show a value depending on pressure-level and latitude
 #
+# - Create a stream to track clicks on the Quadmesh
 
 # +
 #creating Quadmesh
@@ -124,6 +135,20 @@ tap_stream.source = graph
 taps_graph = hv.DynamicMap(    
                 create_taps_graph,
                 streams=[tap_stream])
+# -
+
+# ## Combine
+#
+# The locations() function gives us a combinded, self updating panel. Whenever a parameter changes the function is called.
+#
+# - a string showing the currently chosen parameters is created
+# - the dimensions on the Quadmesh ares set
+# - the Widgets are getting combined to a box
+# - The Tap-plot is created
+# - everything in combined in rows and columns
+#
+
+# +
 x_list=[]
 y_list=[]
 curve_list=[]
@@ -157,11 +182,15 @@ def location(x, y, month_sel, reg_sel, per_sel, ens_sel, var_sel):
     else:
         second_column = pn.Spacer(name='Series Graph',width=400)
     return pn.Column(first_column, second_column, box)
-    
-#  adding panel to gain control over widgets
-hv_panel = pn.panel(graph*imgs_pv*taps_graph)
-#hv_panel.pprint()
 
+
+# -
+
+# ## using Panel dependencies
+#
+# With Panel it is possible calling functions by change of a parameter. This is done by @pn.depends() or defining a watcher.
+
+# +
 @pn.depends(stream.param.x, stream.param.y)
 def get_tabs_tabel(x, y):
     table = hv.Table({'X':x_list, 'Y':y_list},['X', 'Y']).opts(bgcolor='red')
@@ -176,10 +205,16 @@ def reset(arg=None):
 reset_button.param.watch(reset, 'clicks')
 # -
 
-# ## Gridspec 
-# "The GridSpec layout allows arranging multiple Panel objects in a grid using a simple API to assign objects to individual grid cells or to a grid span."
+# ## Panel, Gridspec 
+# Creating a Panel object to overlay the Quadmesh, the p-values and the map of taps.
+#
+# "The GridSpec layout allows arranging multiple Panel objects in a grid using a simple API to assign objects to individual grid cells or to a grid span." ([source](https://panel.holoviz.org/reference/layouts/GridSpec.html))
 
 # +
+#  adding panel to gain control over widgets
+hv_panel = pn.panel(graph*imgs_pv*taps_graph)
+#hv_panel.pprint()
+
 gspec = pn.GridSpec(width=800, height=600, margin=5)
 gspec[0:10, 0] = hv_panel[0]
 gspec[0:13, 1] = location
@@ -187,10 +222,4 @@ gspec[11, 0] = get_tabs_tabel
 
 gspec
 # -
-
-
-
-hv.help(hv.Contours)
-
-
 
