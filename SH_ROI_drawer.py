@@ -14,8 +14,10 @@
 # ---
 
 # + [markdown] toc=true
-# <h1>Table of Contents<span class="tocSkip"></span></h1>
-# <div class="toc"><ul class="toc-item"><li><span><a href="#Data-loading" data-toc-modified-id="Data-loading-1"><span class="toc-item-num">1&nbsp;&nbsp;</span>Data loading</a></span></li></ul></div>
+# # ROI-drawer
+# ## Interactive visualizations of N-dimensional meteorological data
+#
+# This Notebook let you explore meteorological data in an interactive way. Just run the code and use the dashboard created at the bottom! You may create a room of interest in the Quadmesh-plot, to show a plot comparing different ensemble members.
 # -
 
 import numpy as np
@@ -29,25 +31,14 @@ from scipy.stats import combine_pvalues
 hv.extension('bokeh')
 #from ipywebrtc.webrtc import VideoRecorder, WidgetStream
 
-from ipywebrtc.webrtc import VideoRecorder, WidgetStream
-
 # # Data loading
 
 invar = 'zmnoy'
 infiles = sorted(glob.glob(f'zmnoy_files/{invar}*.nc'))
 ds_xa = xr.open_mfdataset(infiles, concat_dim='ens', combine = 'nested')# Open multiple files as a single dataset
-ds_xa
+#ds_xa
 
-# +
-#a=xr.open_dataset(infiles[0]) #Data Inspection
-#a.var
-#a.coords
-#a.attrs
-#a.coords['lat']    #show one specific coordinate
-#a.coords['plev']
-#a.coefs   
-#a.sel(lat=0, plev=1.00e+03,reg='intercept', month=1)
-# -
+# ## rearange/ rename dataset
 
 sel_reg = 'f107'
 sel_month = 1
@@ -57,7 +48,9 @@ ds_sel = ds_xa.sel(**sel_dict).rename({'lat': 'x', 'plev': 'y'})
 ds_sel['coefs'].attrs['units'] = '%'
 ens_ls = ['WACCM_r1', 'WACCM_r2', 'WACCM_r3', 'SOCOL']
 ds_sel['ens'] = range(4)
-ds_sel
+#ds_sel
+
+# ## Create Quadmesh
 
 ds = hv.Dataset(ds_sel[['coefs']], kdims = ['ens', 'x', 'y'])
 vmax = 40
@@ -68,6 +61,8 @@ hvc_opts = dict(logy = True, cmap = 'RdBu_r', symmetric=True, colorbar = True, \
 im = ds.to(hv.QuadMesh, ['x', 'y'], dynamic=True).redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
 im2 = ds.aggregate(['x','y'], np.mean).to(hv.QuadMesh, ['x', 'y'], dynamic=True)
 im2 = im2.redim.range(coefs=(vmin,vmax)).opts(**hvc_opts)
+
+# ## Create Room-of-interest-function
 
 # +
 polys = hv.Polygons([])
@@ -90,10 +85,17 @@ dmap = hv.DynamicMap(roi_curves, streams=[box_stream]).redim.range(ens=(0,3.5))
 
 # -
 
+# ## combine p-values
+# By using the stouffer method to combine the p-values in the averaged plot, we got a useful value.
+#
+
 def combine_pvalues_ufunc(arr):
     _, pv = combine_pvalues(arr, method = 'stouffer')
     return pv
 
+
+# ## adding contours to the Quadmesh
+# Overlaying the coefs with associated p-values, shows the area of confidence.
 
 # +
 hvc_opts = dict(groupby=['ens'], width=300, dynamic=True, \
@@ -112,6 +114,9 @@ hvc_opts = dict(width=300, dynamic=True, \
 imgs_pv2 = temp.hvplot.contour(**hvc_opts)
 # -
 
+# ## Layout
+# By combining every panel in a layout, we get clear interactive dashboard
+
 hl = hv.HLine(0).opts(color = 'gray', line_dash = 'dotted')
 dmap = dmap.opts(xticks=[(i, ens_name) for i,ens_name in enumerate(ens_ls)])
 first_panel = im * imgs_pv * polys
@@ -123,12 +128,6 @@ layout = ((first_panel + second_panel).opts(
     opts.Polygons(fill_alpha=0.2, line_color='green', fill_color ='green'), 
     opts.VLine(color='black'))+second_row).cols(2)
 
-# recorder = VideoRecorder(filename='test', format='mp4', codecs='vp9')
-# recorder.recording = True
-# layout
-
 layout
 
-renderer = hv.renderer('bokeh')
-doc = renderer.server_doc(layout)
-doc.title = 'HoloViews App'
+
